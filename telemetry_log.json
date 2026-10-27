@@ -7460,5 +7460,57 @@
         "muf_mhz": 20.64,
         "nmf2_m3": 586946560000.0,
         "r_scale": "Minor (R1)"
+    },
+    {
+        "timestamp_utc": "2026-10-27 14:24:05",
+        "kp_index": 1.33,
+        "xray_flux": 2.854289107290242e-07,
+        "imf_bz": -1.0,
+        "fof2_mhz": 6.88,
+        "foe_mhz": 2.87,
+        "hmf2_km": 313.3,
+        "plasma_freq_mhz": 6.88,
+        "muf_mhz": 20.64,
+        "nmf2_m3": 586946560000.0,
+        "r_scale": "Minor (R1)"
+    },
+    {
+        "timestamp_utc": "2026-10-27 14:29:07",
+        "kp_index": 1.33,
+        "xray_flux": 2.8855529876636865e-07,
+        "imf_bz": -1.0,
+        "fof2_mhz": 6.88,
+        "foe_mhz": 2.87,
+        "hmf2_km": 313.3,
+        "plasma_freq_mhz": 6.88,
+        "muf_mhz": 20.64,
+        "nmf2_m3": 586946560000.0,
+        "r_scale": "Minor (R1)"
+    },
+    {
+        "timestamp_utc": "2026-10-27 14:34:10",
+        "kp_index": 1.33,
+        "xray_flux": NaN,
+        "imf_bz": 0.0,
+        "fof2_mhz": NaN,
+        "foe_mhz": NaN,
+        "hmf2_km": NaN,
+        "plasma_freq_mhz": NaN,
+        "muf_mhz": NaN,
+        "nmf2_m3": NaN,
+        "r_scale": null
+    },
+    {
+        "timestamp_utc": "2026-10-27 14:39:12",
+        "kp_index": 1.33,
+        "xray_flux": 3.347083747939905e-07,
+        "imf_bz": 0.0,
+        "fof2_mhz": 6.91,
+        "foe_mhz": 2.88,
+        "hmf2_km": 313.3,
+        "plasma_freq_mhz": 6.91,
+        "muf_mhz": 20.73,
+        "nmf2_m3": 592076440000.0,
+        "r_scale": "Minor (R1)"
     }
 ]
