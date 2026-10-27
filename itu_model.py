@@ -1,56 +1,55 @@
 import math
 
-def compute_ionospheric_physics(vtec_tecu, operating_freq_mhz=10.0, solar_kp=0.0):
+def calculate_itu_metrics(drivers, station_coords):
     """
-    Computes ionospheric parameters (foF2, hmF2, slab thickness, plasma frequency, impedance)
-    using ITU-R standard approximations based on live VTEC and solar Kp index.
+    Calculates ITU-R empirical ionospheric parameters with strict NaN handling.
     """
     metrics = {
-        "foF2_mhz": float('nan'),
-        "hmF2_km": float('nan'),
-        "slab_thickness_km": float('nan'),
+        "fof2_mhz": float('nan'),
+        "hmf2_km": float('nan'),
+        "foe_mhz": float('nan'),
         "plasma_freq_mhz": float('nan'),
-        "impedance_real": float('nan')
+        "muf_mhz": float('nan'),
+        "nmf2_m3": float('nan'),
+        "r_scale": None
     }
     
+    kp = drivers.get('kp_index', float('nan'))
+    xray = drivers.get('xray_flux', float('nan'))
+    
+    # STRICT TELEMETRY CHECK: Abort if live drivers are missing
+    if math.isnan(kp) or math.isnan(xray):
+        return metrics
+        
     try:
-        if vtec_tecu is None or math.isnan(vtec_tecu) or vtec_tecu <= 0:
-            return metrics
-            
-        # 1. Slab Thickness (km) increases slightly with geomagnetic activity (Kp)
-        slab_thickness = 350.0 + (solar_kp * 12.0)
-        metrics["slab_thickness_km"] = float(slab_thickness)
+        base_fof2 = 5.5
+        xray_boost = math.log10(max(xray, 1e-9)) + 9.0  
+        kp_effect = 0.3 * kp  
         
-        # 2. Peak Electron Density NmF2 (electrons/m^3) derived from VTEC and slab thickness
-        total_electrons_m2 = vtec_tecu * 1e16
-        mean_density = total_electrons_m2 / (slab_thickness * 1000.0)
-        nmf2 = mean_density * 1.6  # Chapman layer peak factor
+        fof2 = base_fof2 + max(0.0, xray_boost * 0.4) + kp_effect
+        fof2 = round(max(1.0, min(fof2, 25.0)), 2)
         
-        # 3. Critical Frequency foF2 (MHz) = 9.0 * sqrt(NmF2 / 10^12)
-        fof2 = 9.0 * math.sqrt(max(0.0, nmf2 / 1e12))
-        metrics["foF2_mhz"] = round(float(fof2), 2)
+        # Explicit calculations for all parameters
+        muf = round(fof2 * 3.0, 2)
+        foe = round(2.5 + max(0.0, xray_boost * 0.15), 2)
+        hmf2 = round(300.0 + (10.0 * kp), 1)
+        nmf2_m3 = 1.24e10 * (fof2 ** 2)
         
-        # 4. Peak Height hmF2 (km) - standard mid-latitude baseline ~ 300 km
-        hmf2 = 300.0 + (solar_kp * 5.0)
-        metrics["hmF2_km"] = float(hmf2)
+        metrics["fof2_mhz"] = fof2
+        metrics["hmf2_km"] = hmf2
+        metrics["foe_mhz"] = foe
+        metrics["plasma_freq_mhz"] = fof2
+        metrics["muf_mhz"] = muf
+        metrics["nmf2_m3"] = nmf2_m3
         
-        # 5. Plasma Frequency (MHz) at F2 peak layer
-        metrics["plasma_freq_mhz"] = round(float(fof2), 2)
+        if xray >= 1e-3: metrics["r_scale"] = "Extreme (R5)"
+        elif xray >= 1e-4: metrics["r_scale"] = "Severe (R4)"
+        elif xray >= 1e-5: metrics["r_scale"] = "Strong (R3)"
+        elif xray >= 1e-6: metrics["r_scale"] = "Moderate (R2)"
+        elif xray >= 1e-7: metrics["r_scale"] = "Minor (R1)"
+        else: metrics["r_scale"] = "Normal (R0)"
         
-        # 6. Effective RF Impedance (ohms) in ionospheric plasma medium
-        freq = max(0.1, operating_freq_mhz)
-        f_p = fof2
-        if abs(freq - f_p) < 0.2:
-            metrics["impedance_real"] = float('inf')  # Plasma cutoff / blackout
-        else:
-            permittivity = max(0.01, 1.0 - (f_p / freq)**2)
-            impedance = 377.0 / math.sqrt(permittivity)
-            metrics["impedance_real"] = round(float(impedance), 2)
-            
     except Exception as e:
-        print(f"[ITU Model Error] Computation failed: {e}")
+        print(f"[Warning] ITU model calculation error: {e}")
         
     return metrics
-
-if __name__ == "__main__":
-    print("Testing ITU Model:", compute_ionospheric_physics(18.5, 10.0, 3.0))

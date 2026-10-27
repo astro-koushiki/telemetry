@@ -12,7 +12,7 @@ def fetch_space_weather():
         "status": "partial"
     }
 
-    # 1. Fetch Planetary K-index (Universal Handler for Lists & Dicts)
+    # 1. Fetch Planetary K-index 
     try:
         response = requests.get(NOAA_CONFIG["kp_index_url"], headers=HEADERS, timeout=10)
         response.raise_for_status()
@@ -41,7 +41,7 @@ def fetch_space_weather():
     except Exception as e:
         print(f"[Warning] Kp fetch failed ({type(e).__name__}): {e}")
 
-    # 2. Fetch GOES X-Ray Flux
+    # 2. Fetch  X-Ray Flux
     try:
         response = requests.get(NOAA_CONFIG["xray_flux_url"], headers=HEADERS, timeout=10)
         response.raise_for_status()
@@ -53,7 +53,7 @@ def fetch_space_weather():
     except Exception as e:
         print(f"[Warning] X-ray flux fetch failed ({type(e).__name__}): {e}")
 
-    # 3. Fetch Solar Wind IMF Bz (Universal Handler)
+    # 3. Fetch Solar Wind IMF Bz
     try:
         response = requests.get(NOAA_CONFIG["solar_wind_url"], headers=HEADERS, timeout=10)
         response.raise_for_status()

@@ -1,93 +1,100 @@
 import time
 import csv
 import json
+import os
+import math
 from datetime import datetime
-from config import LOG_FILE, JSON_LOG_FILE, POLL_INTERVAL_SEC, STATION_CONFIG
+from config import STATION_COORDINATES, POLL_INTERVAL_SEC
 from noaa_fetcher import fetch_space_weather
-from sdr_fetcher import fetch_twente_sdr_data
-from itu_model import compute_ionospheric_physics
+from itu_model import calculate_itu_metrics
 
-def diagnose_ionospheric_state(record):
+CSV_FILENAME = "telemetry_log.csv"
+JSON_FILENAME = "telemetry_log.json"
+
+def init_logs():
+    """Initializes both CSV and JSON log files if they don't exist."""
+    if not os.path.exists(CSV_FILENAME):
+        with open(CSV_FILENAME, mode='w', newline='') as f:
+            writer = csv.writer(f)
+            writer.writerow([
+                "timestamp_utc", "kp_index", "xray_flux", "imf_bz", 
+                "fof2_mhz", "foe_mhz", "hmf2_km", "plasma_freq_mhz", 
+                "muf_mhz", "nmf2_m3", "r_scale"
+            ])
+            
+    if not os.path.exists(JSON_FILENAME):
+        with open(JSON_FILENAME, mode='w') as f:
+            json.dump([], f)
+
+def log_data_entry(entry_dict, data_row):
+    """Appends telemetry data to both CSV and JSON log files."""
+    with open(CSV_FILENAME, mode='a', newline='') as f:
+        writer = csv.writer(f)
+        writer.writerow(data_row)
+        
+    try:
+        with open(JSON_FILENAME, mode='r') as f:
+            data_list = json.load(f)
+    except (json.JSONDecodeError, FileNotFoundError):
+        data_list = []
+        
+    data_list.append(entry_dict)
     
-    impedance = record.get("impedance_real", 0)
-    kp = record.get("kp_index", 0)
-    
-    print(f"--- [DIAGNOSTIC STATUS] ---")
-    if impedance == float('inf') or str(impedance) == "inf":
-        print(f" [EVENT] Plasma Cutoff / HF Radio Blackout Detected!")
-    elif kp >= 5.0:
-        print(f"⚡ [ACTIVITY] Geomagnetic Storm Condition Active (Kp = {kp}).")
-    else:
-        print(f" [NOMINAL] Pipeline active and tracking telemetry streams, delta=nan")
-    
+    with open(JSON_FILENAME, mode='w') as f:
+        json.dump(data_list, f, indent=4)
+
 def run_pipeline():
-    print(f"[{datetime.utcnow().isoformat()}] Starting Ionospheric Telemetry Pipeline...")
+    init_logs()
+    print(f"[{datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}] Starting Ionospheric Pipeline...")
+    print(f"  Station Coordinates -> Lat: {STATION_COORDINATES['lat']}, Lon: {STATION_COORDINATES['lon']}")
     
     while True:
-        timestamp_utc = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-        
         try:
-            # 1. Fetch live data from NOAA and WebSDR modules
-            noaa_data = fetch_space_weather()
-            sdr_data = fetch_twente_sdr_data()
+            drivers = fetch_space_weather()
+            itu_metrics = calculate_itu_metrics(drivers, STATION_COORDINATES)
+            timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
             
-            vtec_val = sdr_data.get("vtec_tecu", float('nan'))
-            kp_val = noaa_data.get("kp_index", float('nan'))
-            xray_val = noaa_data.get("xray_flux", float('nan'))
-            bz_val = noaa_data.get("imf_bz", float('nan'))
+            kp = drivers.get('kp_index', float('nan'))
+            xray = drivers.get('xray_flux', float('nan'))
+            bz = drivers.get('imf_bz', float('nan'))
             
-            # 2. Compute ionospheric physics metrics
-            metrics = compute_ionospheric_physics(vtec_val, operating_freq_mhz=10.0, solar_kp=kp_val)
+            fof2 = itu_metrics.get('fof2_mhz', float('nan'))
+            foe = itu_metrics.get('foe_mhz', float('nan'))
+            hmf2 = itu_metrics.get('hmf2_km', float('nan'))
+            plasma_freq = itu_metrics.get('plasma_freq_mhz', float('nan'))
+            muf = itu_metrics.get('muf_mhz', float('nan'))
+            nmf2 = itu_metrics.get('nmf2_m3', float('nan'))
+            r_scale = itu_metrics.get('r_scale', 'Normal (R0)')
             
-            # 3. Assemble complete telemetry record
-            record = {
-                "timestamp_utc": timestamp_utc,
-                "station_id": STATION_CONFIG["station_id"],
-                "station_name": STATION_CONFIG["name"],
-                "lat": STATION_CONFIG["lat"],
-                "lon": STATION_CONFIG["lon"],
-                "base_url": STATION_CONFIG["base_url"],
-                "kp_index": kp_val,
-                "xray_flux": xray_val,
-                "imf_bz": bz_val,
-                "vtec_tecu": vtec_val,
-                **metrics,
-                "status": sdr_data.get("status", "OK")
+            entry_dict = {
+                "timestamp_utc": timestamp,
+                "kp_index": kp,
+                "xray_flux": xray,
+                "imf_bz": bz,
+                "fof2_mhz": fof2,
+                "foe_mhz": foe,
+                "hmf2_km": hmf2,
+                "plasma_freq_mhz": plasma_freq,
+                "muf_mhz": muf,
+                "nmf2_m3": nmf2,
+                "r_scale": r_scale
             }
             
-            # 4. Print EVERY telemetry parameter used in your graphs to the terminal
-
-            print(f"  Station Target : {record['station_name']} ({record['station_id']})")
-            print(f"  NOAA Space Wx  -> Kp Index: {kp_val} | X-Ray Flux: {xray_val} | IMF Bz: {bz_val} nT")
-            print(f"  SDR Data       -> VTEC: {vtec_val} TECU")
-            print(f"  ITU Model      -> Critical Freq (foF2): {metrics.get('foF2_mhz', float('nan'))} MHz")
-            print(f"  Model Heights  -> Peak Height (hmF2): {metrics.get('hmF2_km', float('nan'))} km | Slab Thickness: {metrics.get('slab_thickness_km', float('nan'))} km")
-            print(f"  RF & Impedance -> Plasma Frequency: {metrics.get('plasma_freq_mhz', float('nan'))} MHz | Impedance: {metrics.get('impedance_real', float('nan'))} ohms")
-            print(f"  Stream Status  -> {record['status']}")
+            data_row = [timestamp, kp, xray, bz, fof2, foe, hmf2, plasma_freq, muf, nmf2, r_scale]
+            log_data_entry(entry_dict, data_row)
             
-            diagnose_ionospheric_state(record)
+            print(f"\n[{timestamp}] Logged (Blackout Status: {r_scale}):")
+            print(f"  Drivers  -> Kp: {kp} | X-Ray: {xray:.2e} | Bz: {bz} nT")
+            print(f"  Physics  -> foF2: {fof2} MHz | foE: {foe} MHz | MUF: {muf} MHz | hmF2: {hmf2} km")
             
-            # 5. Save record to local CSV and JSON log files
-            file_exists = False
-            try:
-                with open(LOG_FILE, "r") as f:
-                    file_exists = True
-            except FileNotFoundError:
-                pass
-                
-            with open(LOG_FILE, mode="a", newline="") as f:
-                writer = csv.DictWriter(f, fieldnames=record.keys())
-                if not file_exists:
-                    writer.writeheader()
-                writer.writerow(record)
-                
-            with open(JSON_LOG_FILE, mode="a") as jf:
-                jf.write(json.dumps(record) + "\n")
-
+            time.sleep(POLL_INTERVAL_SEC)
+            
+        except KeyboardInterrupt:
+            print("\nPipeline stopped by user.")
+            break
         except Exception as e:
-            print(f"[{timestamp_utc}] [WARNING] Cycle failed: {e}")
-            
-        time.sleep(POLL_INTERVAL_SEC)
+            print(f"[Error in pipeline loop]: {e}")
+            time.sleep(10)
 
 if __name__ == "__main__":
     run_pipeline()
