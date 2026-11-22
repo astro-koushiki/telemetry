@@ -44,15 +44,15 @@ This model captures live space weather data directly from NOAA feeds without syn
 
 ##  Features
 
-1. **NOAA SWPC Ingestion:** Automatically fetches real-time geomagnetic and solar activity from NOAA Space Weather Prediction Center feeds (`Kp index`, `X-Ray flux`, and `IMF Bz`).
-2. **ITU-R Physics Engine:** Computes critical ionospheric parameters from live solar inputs, including:
+1. **NOAA Ingestion:** Automatically fetches real-time geomagnetic and solar activity from NOAA Space Weather Prediction Center feeds (`Kp index`, `X-Ray flux`, and `IMF Bz`).
+2. **ITU-R Physics:** Computes critical ionospheric parameters from live solar inputs, including:
    * Critical Frequencies (`foF2`, `foE`)
    * Layer Heights (`hmf2`)
    * Plasma Frequency & Electron Density (`NmF2`)
    * Maximum Usable Frequency (`MUF`)
    * Storm Scaling Factors (`R-scale`)
 3. **Data Logging:** Persistently writes calculated telemetry into `telemetry_log.csv` for chronological tracking (`timestamp_utc`, `kp_index`, `xray_flux`, `imf_bz`, `fof2_mhz`, `foe_mhz`, `hmf2_km`, `plasma_freq_mhz`, `muf_mhz`, `nmf2_m3`, `r_scale`).
-4. **Multi-Panel Visualization:** Generates synchronized matplotlib diagnostics tracking solar inputs, critical frequencies, and ionospheric response parameters.
+4. **data visualisation:** Generates synchronized matplotlib  graphs of solar drivers and ionosphere dynamics parameters.
 
 ---
 
@@ -60,7 +60,7 @@ This model captures live space weather data directly from NOAA feeds without syn
 
 ```text
 ┌─────────────────────────┐
-│  NOAA SWPC Live Feeds   │
+│  NOAA  Live Feeds   │
 │  (Kp, X-Ray, IMF Bz)    │
 └────────────┬────────────┘
              │
