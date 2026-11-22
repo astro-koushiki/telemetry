@@ -15,19 +15,19 @@ This model captures live space weather data directly from NOAA feeds without syn
 * before running the script install: python 3.8 or higher version .
 
 * Navigate to your desired folder:
-  Bash
+  ```Bash
 cd Documents/Projects
 
 * to Clone the repository:
-  Bash
+  ```Bash
 git clone https://github.com/astro-koushiki/telemetry.git
 
 * Open the project directory:
-  Bash
+  ```Bash
 cd repository-name
 
 * set up and activate python virtual environment (optional):
-  Bash
+  ```Bash
 python -m venv venv
 source venv/bin/activate
 
@@ -35,7 +35,7 @@ source venv/bin/activate
   ```bash
   pip install requests matplotlib pandas numpy
 * Run the application:
-  Bash
+  ```Bash
 python main.py
     
 
