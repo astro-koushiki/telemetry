@@ -11,6 +11,36 @@ Radio waves bounce off the ionosphere, enabling long-distance skywave propagatio
 This model captures live space weather data directly from NOAA feeds without synthetic fallbacks, feeding it into empirical physics equations to calculate real-time ionospheric responses, critical frequencies, and maximum usable frequencies.
 
 ---
+## how to set up and run :
+* before running the script install: python 3.8 or higher version .
+
+* Navigate to your desired folder:
+  Bash
+cd Documents/Projects
+
+* to Clone the repository:
+  Bash
+git clone https://github.com/astro-koushiki/telemetry.git
+
+* Open the project directory:
+  Bash
+cd repository-name
+
+* set up and activate python virtual environment (optional):
+  Bash
+python -m venv venv
+source venv/bin/activate
+
+* to install libraries run:
+  ```bash
+  pip install requests matplotlib pandas numpy
+* Run the application:
+  Bash
+python main.py
+    
+
+---
+
 
 ##  Features
 
